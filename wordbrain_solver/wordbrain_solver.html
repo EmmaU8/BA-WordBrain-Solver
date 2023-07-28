@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WordBrain Solver</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css" rel="stylesheet">
+    <style>
+        /* allgemeines Styling */
+        body {
+            margin: 0 auto;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: "Arial";
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            --main-color: #112D4E;
+            --p1: 25px;
+            --p2: 22px;
+            --p3: 20px;
+            --p4: 15px;
+        }
+
+        .container {
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            position: relative;
+            width: 100%;
+            padding: 100px 0;
+            background: var(--main-color);
+            background-size: cover;
+            background-position: center;
+            color: white;
+            border-radius: 0px 0px 70% 70%;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+
+        p {
+            text-align: center;
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            font-size: var(--p1);
+        }
+
+        .logo-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 700px;
+            margin: 0 auto;
+            margin-bottom: 10vh;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+        }
+
+        .box {
+            width: 80px;
+            height: 80px;
+            margin: 4px;
+            background-color: white;
+            color: var(--main-color);
+            text-align: center;
+            font-size: 35px;
+            font-weight: bold;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: xx-large;
+            margin: 0 0;
+        }
+
+        .step {
+            margin: 0 5vw;
+            padding-top: 4%;
+            padding-bottom: 15px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: start;
+            font-size: medium;
+        }
+
+        .box-reverse {
+            width: 50px;
+            height: 50px;
+            margin: 1px;
+            background-color: var(--main-color);
+            color: white;
+            text-align: center;
+            font-size: var(--p1);
+            font-weight: bold;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box-reverse-text {
+            flex-direction: column;
+            display: flex;
+            align-items: flex-start;
+            margin-left: 10px; 
+            justify-content: start;
+            text-align: left;
+        }
+
+        .box-reverse-text p {
+            margin: 0;
+            margin-top: 7px;
+            padding: 0;
+            display: block;
+            text-align: left;
+        }
+
+        .note {
+            font-size: var(--p3);
+        }
+
+
+        /* Bild-Upload und -Anzeige */
+        .drop-container {
+            position: relative;
+            display: flex;
+            width: 70%;
+            max-width: 80vw; 
+            margin: 0 auto;
+            margin-bottom: 2%;
+            gap: 10px;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px dashed #555;
+            color: #444;
+            cursor: pointer;
+            transition: background .2s ease-in-out, border .2s ease-in-out;
+            box-sizing: border-box;
+        }
+
+        .drop-container:hover {
+        background: #eee;
+        border-color: #111;
+        }
+
+        .drop-container:hover .drop-title {
+        color: #222;
+        }
+
+        .drop-title {
+        color: #444;
+        font-size: 20px;
+        font-weight: bold;
+        text-align: center;
+        transition: color .2s ease-in-out;
+        }
+
+        .drop-container.drag-active {
+        background: #eee;
+        border-color: #111;
+        }
+
+        .drop-container.drag-active .drop-title {
+        color: #222;
+        }
+
+        canvas{
+            display: none;
+            max-width: 70%;
+        }
+
+        #processImage {
+            width: 40%;
+            margin-top: 4%;
+        }
+
+
+        /* Eingabefelder und Buttons */
+        .input {
+            display: block;
+            margin-bottom: 10px;
+            padding: 5px;
+            font-size: var(--p2);
+            border-radius: 5px;
+            border: 1px solid #DBE2EF;
+        }
+
+        .button {
+            appearance: none;
+            background-color: transparent;
+            border: 2px solid var(--main-color);
+            border-radius: 15px;
+            box-sizing: border-box;
+            color: var(--main-color);
+            cursor: pointer;
+            display: inline-block;
+            font-family: Roobert,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+            font-size: 20px;
+            font-weight: 600;
+            line-height: normal;
+            margin: 0;
+            min-height: 60px;
+            min-width: 0;
+            outline: none;
+            padding: 16px 24px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 300ms cubic-bezier(.23, 1, 0.32, 1);
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            width: 100%;
+            will-change: transform;
+        }
+
+        .button:disabled {
+            pointer-events: none;
+        }
+
+        .button:hover, 
+        .button:focus {
+            color: #fff;
+            background-color: var(--main-color);
+            box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            box-shadow: none;
+            transform: translateY(0);
+        }
+
+        #imageInput {
+            font-size: var(--p2);
+        }
+
+
+        /* Ergebnisbereich */
+        .result-container {
+            position: relative;
+            width: 100%;
+            padding: 100px 0;
+            background: var(--main-color);
+            background-size: cover;
+            background-position: center;
+            color: white;
+            border-radius: 70% 70% 0px 0px;
+            margin-top: 4%;
+            margin-bottom: 0;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .result-heading {
+            font-size: 35px;
+            font-variant: small-caps;
+            max-width: 700px;
+            margin: 0 auto;
+            margin-bottom: 2vh;
+            text-align: center;
+            justify-content: center;
+            align-items: center; 
+        }
+
+        .found-words {
+            display: flex;
+            margin: 20px auto;
+            flex-direction: column;
+            justify-content: start;
+            align-items: center;
+            white-space: pre-wrap;
+        }
+
+        .found-word {
+            background-color: white;
+            color: var(--main-color);
+            font-size: var(--p1);
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 5px;
+            width: fit-content;
+        }
+
+
+        /* mache Styling responsiv*/
+        @media (max-width: 600px) {
+            .box {
+                width: 30px;
+                height: 30px;
+                margin: 2px;
+                font-size: 18px;
+            }
+            .box-reverse {
+                width: 40px;
+                height: 40px;
+                margin: 4px;
+                font-size: var(--p3);
+            }
+            .result-heading {
+                font-size: 28px;
+            }
+            .found-word, .button, .input {
+                font-size: var(--p3);
+            }
+            p {
+                font-size: var(--p2);
+            }
+
+            .note {
+                font-size: var(--p4);
+            }
+        }
+
+        @media (min-width: 600px) and (max-width: 900px) {
+            .box {
+                width: 50px;
+                height: 50px;
+                margin: 3px;
+                font-size: 24px;
+            }
+            .box-reverse {
+                width: 40px;
+                height: 40px;
+                margin: 4px;
+                font-size: var(--p3);
+            }
+            .result-heading {
+                font-size: 30px;
+            }
+            .found-word, .button, .input {
+                font-size: var(--p3);
+            }
+            p {
+                font-size: var(--p2);
+            }
+
+            .note {
+                font-size: var(--p4);
+            }
+        }
+
+        @media (min-width: 900px) and (max-width: 1200px) {
+            .box {
+                width: 70px;
+                height: 70px;
+                margin: 4px;
+                font-size: 32px;
+            }
+            .box-reverse {
+                width: 45px;
+                height: 45px;
+                margin: 4px;
+                font-size: var(--p2);
+            }
+            .result-heading {
+                font-size: 32px;
+            }
+            .found-word, .button, .input {
+                font-size: var(--p2);
+            }
+            p {
+                font-size: var(--p2);
+            }
+
+            .note {
+                font-size: var(--p4);
+            }
+        }
+
+
+        /* verstecke für Nutzer unwichtige Bildbereiche */
+        .grid-cells-container,
+        .image-container,
+        .binarized-image-container,
+        pre#result {
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+    
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <div class="row">
+                    <div class="box" aria-label="W">W</div>
+                    <div class="box" aria-label="O">O</div>
+                    <div class="box" aria-label="R">R</div>
+                    <div class="box" aria-label="D">D</div>
+                    <div class="box" aria-label="G">G</div>
+                    <div class="box" aria-label="R">R</div>
+                    <div class="box" aria-label="I">I</div>
+                    <div class="box" aria-label="D">D</div>
+                </div>
+                <div class="row">
+                    <div class="box" aria-label="S">S</div>
+                    <div class="box" aria-label="O">O</div>
+                    <div class="box" aria-label="L">L</div>
+                    <div class="box" aria-label="V">V</div>
+                    <div class="box" aria-label="E">E</div>
+                    <div class="box" aria-label="R">R</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="steps">
+
+            <div class="step">
+                <div class="box-reverse" aria-label="Schritt 1">1</div>
+                <div class="box-reverse-text">
+                    <p>Füge ein Bild des WordBrain Rätsels ein, das gelöst werden soll!</p>
+                    <p class="note">Schneide das Bild bei Bedarf zu, so dass nur das Wortgitter zu sehen ist!</p>
+                </div>
+            </div>
+            
+            <label for="images" class="drop-container" id="dropcontainer">
+                <span class="drop-title">Drop files here</span>
+                <span class="drop-title">or</span>
+                <input type="file" id="imageInput" accept="image/*" tabindex="1" required>
+            </label>
+     
+            <canvas id="canvas" alt="Darstellung des hochgeladenen Bildes eines WordBrain-Rätsels"></canvas>
+
+            <div class="step">
+                <div class="box-reverse" aria-label="Schritt 2">2</div>
+                <div class="box-reverse-text">
+                    <p>Gib die Längen der Wörter ein, die im WordBrain Rätsel gefunden werden sollen!</p>
+                </div>
+            </div>
+
+            <input type="text" id="lengthInput" class="input" value="" placeholder="z.B. 4, 5, 3" tabindex="2" required>
+            <button id="processImage" class="button" role="button" tabindex="3">Lösungen suchen</button>
+
+            <pre id="result"></pre>
+            <div id="gridCellsContainer" class="grid-cells-container"></div>
+            <div id="imageContainer" class="image-container"></div>
+            <div id="binarizedImageContainer" class="binarized-image-container"></div>
+
+            <div id="resultContainer" class="result-container">
+                <p class="result-heading">Gefundene Lösungen</p>
+                <div class="found-words" id="foundWords"></div>
+                <p id='errorMessage'></p>
+            </div>
+        </div>   
+    </div>
+
+    <script type="module" src="./script.js"></script>
+</body>
+</html>
+
